@@ -164,7 +164,7 @@ app.post('/api/users/:_id/exercises', (req, res) => {
 
 // PATH /api/users/:_id/logs?[from][&to][&limit]
 app.get('/api/users/:_id/logs', (req, res) => {
-  const id = req.params["_id"] || req.params._id;
+  const id = req.body["_id"] || req.params._id;
   var fromDate = req.query.from;
   var toDate = req.query.to;
   var limit = req.query.limit;

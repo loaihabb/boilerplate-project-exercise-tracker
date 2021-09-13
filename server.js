@@ -8,8 +8,6 @@ require('dotenv').config();
 // Import Mongo DB Atlas models
 const User = require('./models/user');
 const Exercise = require('./models/exercise');
-const { ObjectID, ObjectId } = require('bson');
-const { object } = require('webidl-conversions');
 
 // Mount the body parser as middleware
 app.use(express.json());
@@ -29,7 +27,7 @@ app.use(express.static('public'));
 
 // Print to the console information about each request made
 app.use((req, res, next) => {
-  console.log(req.method + " " + req.path + " - " + req.ip);
+  console.log("method: " + req.method + "  |  path: " + req.path + "  |  IP - " + req.ip);
   next();
 });
 
@@ -165,9 +163,34 @@ app.get('/api/users/:_id/logs', (req, res) => {
   const id = req.params["_id"];
   var fromDate = req.query.from;
   var toDate = req.query.to;
-  const limit = req.query.limit;
+  var limit = req.query.limit;
 
   console.log(id, fromDate, toDate, limit);
+
+  // Validate the query parameters
+  if (fromDate) {
+    fromDate = new Date(fromDate);
+    if (fromDate == "Invalid Date") {
+      res.json("Invalid Date Entered");
+      return;
+    }
+  }
+
+  if (toDate) {
+    toDate = new Date(toDate);
+    if (toDate == "Invalid Date") {
+      res.json("Invalid Date Entered");
+      return;
+    }
+  }
+
+  if (limit) {
+    limit = new Number(limit);
+    if (isNaN(limit)) {
+      res.json("Invalid Limit Entered");
+      return;
+    }
+  }
 
   // Get the user's information
   User.findOne({ "_id" : id }, (error, data) => {
@@ -188,31 +211,38 @@ app.get('/api/users/:_id/logs', (req, res) => {
       var dateFilter = {};
 
       // Add to and from keys to the object if available
+      // Add date limits to the date filter to be used in the find() method on the Exercise model
       if (fromDate) {
-        try {
-          fromDate = new Date(fromDate);
-          objToReturn["from"] = fromDate.toDateString();
-          dateFilter["$gte"] = fromDate;
-          if (toDate) {
-            toDate = new Date(toDate);
-            objToReturn["to"] = toDate.toDateString();
-            dateFilter["$lt"] = toDate;
-          } else {
-            dateFilter["$lt"] = Date.now();
-          }
-          findFilter.date = dateFilter;
-        } catch (CastError) {
-          res.json("Invalid Date Entered");
-          return console.log(CastError);
+        objToReturn["from"] = fromDate.toDateString();
+        dateFilter["$gte"] = fromDate;
+        if (toDate) {
+          objToReturn["to"] = toDate.toDateString();
+          dateFilter["$lt"] = toDate;
+        } else {
+          dateFilter["$lt"] = Date.now();
         }
       }
 
-      console.log(findFilter);
+      if (toDate) {
+        objToReturn["to"] = toDate.toDateString();
+        dateFilter["$lt"] = toDate;
+        dateFilter["$gte"] = new Date("1960-01-01");
+      }
+
+      // Add dateFilter to findFilter if either date is provided
+      if (toDate || fromDate) {
+        findFilter.date = dateFilter;
+      }
+
+      // console.log(findFilter);
+      // console.log(dateFilter);
 
       // Add the count entered or find the count between dates
       Exercise.count(findFilter, (error, data) => {
-        if (error) return console.log(error);
-
+        if (error) {
+          res.json("Invalid Date Entered");
+          return console.log(error);
+        }
         // Add the count key 
         var count = data;
         if (limit && limit < count) {

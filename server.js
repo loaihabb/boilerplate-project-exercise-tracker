@@ -90,24 +90,27 @@ app.route('/api/users').get((req, res) => {
 // POST: Store new exercise in the Exercise model 
 app.post('/api/users/:_id/exercises', (req, res) => {
   // Get data from form
-  const userID = req.body[":_id"];
+  const userID = req.body[":_id"] || req.params._id;
   const descriptionEntered = req.body.description;
   const durationEntered = req.body.duration;
   const dateEntered = req.body.date;
 
   // Print statement for debugging
-  // console.log(userID, descriptionEntered, durationEntered, dateEntered);
+  console.log(userID, descriptionEntered, durationEntered, dateEntered);
 
   // Make sure the user has entered in an id, a description, and a duration
   // Set the date entered to now if the date is not entered
   if (!userID) {
     res.json("Path `userID` is required.");
+    return;
   }
   if (!descriptionEntered) {
     res.json("Path `description` is required.");
+    return;
   }
   if (!durationEntered) {
     res.json("Path `duration` is required.");
+    return;
   }
 
   // Check if user ID is in the User model
@@ -118,6 +121,7 @@ app.post('/api/users/:_id/exercises', (req, res) => {
     }
     if (!data) {
       res.json("Unknown userID");
+      return;
     } else {
       console.log(data);
       const usernameMatch = data.username;
@@ -160,7 +164,7 @@ app.post('/api/users/:_id/exercises', (req, res) => {
 
 // PATH /api/users/:_id/logs?[from][&to][&limit]
 app.get('/api/users/:_id/logs', (req, res) => {
-  const id = req.params["_id"];
+  const id = req.params["_id"] || req.params._id;
   var fromDate = req.query.from;
   var toDate = req.query.to;
   var limit = req.query.limit;
